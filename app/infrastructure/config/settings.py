@@ -23,6 +23,12 @@ class Settings(BaseSettings):
     # Password hashing
     BCRYPT_ROUNDS: int = 12
     
+    # Logging
+    LOG_LEVEL: str = "INFO"  # TRACE, DEBUG, INFO, WARNING, ERROR, CRITICAL
+    LOG_FILE: str = "logs/app.log"  # Path to log file for JSON structured logs
+    LOG_CONSOLE: bool = True  # Enable console logging
+    LOG_JSON_FILE: bool = True  # Use JSON format for file logs (Elasticsearch-compatible)
+    
     model_config = {"env_file": ".env"}
 
 

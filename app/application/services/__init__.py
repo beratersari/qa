@@ -3,5 +3,14 @@ from .user_service import UserService
 from .subscription_service import SubscriptionService
 from .flashcard_service import FlashCardService
 from .question_service import QuestionService, QuestionSetService
+from .leaderboard_service import LeaderboardService
 
-__all__ = ["AuthService", "UserService", "SubscriptionService", "FlashCardService", "QuestionService", "QuestionSetService"]
+__all__ = [
+    "AuthService",
+    "UserService",
+    "SubscriptionService",
+    "FlashCardService",
+    "QuestionService",
+    "QuestionSetService",
+    "LeaderboardService"
+]

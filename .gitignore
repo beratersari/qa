@@ -10,6 +10,7 @@
 # Python tarafından derlenmiş / optimize edilmiş veya DLL dosyaları
 __pycache__/
 **/__pycache__/
+**/__pycache__
 *.py[cod]
 
 # C uzantıları

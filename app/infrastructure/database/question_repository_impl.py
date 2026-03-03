@@ -18,6 +18,7 @@ class SQLAlchemyQuestionRepository(QuestionRepository):
             prompt=model.prompt,
             choices=model.choices or [],
             answer_index=model.answer_index,
+            difficulty_level=model.difficulty_level,
             created_by=model.created_by,
             created_at=model.created_at,
             updated_at=model.updated_at
@@ -28,6 +29,7 @@ class SQLAlchemyQuestionRepository(QuestionRepository):
             prompt=question.prompt,
             choices=question.choices,
             answer_index=question.answer_index,
+            difficulty_level=question.difficulty_level,
             created_by=question.created_by
         )
         self.db.add(db_question)
@@ -191,6 +193,7 @@ class SQLAlchemyQuestionSetRepository(QuestionSetRepository):
                 "id": q.id,
                 "prompt": q.prompt,
                 "choices": [{"letter": chr(65 + i), "text": choice} for i, choice in enumerate(q.choices or [])],
+                "difficulty_level": q.difficulty_level,
                 "set_id": set_id,
                 "question_id": q.id
             }

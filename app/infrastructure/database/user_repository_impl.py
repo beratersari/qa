@@ -24,6 +24,9 @@ class SQLAlchemyUserRepository(UserRepository):
             is_active=model.is_active,
             is_verified=model.is_verified,
             subscription_type=model.subscription_type,
+            total_xp=model.total_xp,
+            challenge_streak=model.challenge_streak,
+            longest_challenge_streak=model.longest_challenge_streak,
             created_at=model.created_at,
             updated_at=model.updated_at,
             last_login=model.last_login
@@ -39,7 +42,8 @@ class SQLAlchemyUserRepository(UserRepository):
             role=user.role,
             is_active=user.is_active,
             is_verified=user.is_verified,
-            subscription_type=user.subscription_type
+            subscription_type=user.subscription_type,
+            total_xp=user.total_xp
         )
         self.db.add(db_user)
         self.db.commit()

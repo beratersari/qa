@@ -33,6 +33,7 @@ async def create_question(
         id=question.id,
         prompt=question.prompt,
         choices=question.get_choices_with_letters(),
+        difficulty_level=question.difficulty_level,
         created_by=question.created_by,
         created_at=question.created_at,
         updated_at=question.updated_at
@@ -56,6 +57,7 @@ async def get_question(
         id=question.id,
         prompt=question.prompt,
         choices=question.get_choices_with_letters(),
+        difficulty_level=question.difficulty_level,
         created_by=question.created_by,
         created_at=question.created_at,
         updated_at=question.updated_at
@@ -76,6 +78,7 @@ async def list_questions(
             id=q.id,
             prompt=q.prompt,
             choices=q.get_choices_with_letters(),
+            difficulty_level=q.difficulty_level,
             created_by=q.created_by,
             created_at=q.created_at,
             updated_at=q.updated_at
@@ -158,6 +161,7 @@ async def list_my_questions(
             id=q.id,
             prompt=q.prompt,
             choices=q.get_choices_with_letters(),
+            difficulty_level=q.difficulty_level,
             created_by=q.created_by,
             created_at=q.created_at,
             updated_at=q.updated_at

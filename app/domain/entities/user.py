@@ -27,9 +27,17 @@ class User(BaseModel):
     is_active: bool = True
     is_verified: bool = False
     subscription_type: SubscriptionType = SubscriptionType.FREE
+    total_xp: int = 0
+    challenge_streak: int = 0
+    longest_challenge_streak: int = 0
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     last_login: Optional[datetime] = None
+
+    @property
+    def level(self) -> int:
+        """Calculate level based on total XP (0-99 -> level 1, 100-199 -> level 2, etc.)"""
+        return (self.total_xp // 100) + 1
 
 
 class UserCreate(BaseModel):
@@ -59,5 +67,9 @@ class UserResponse(BaseModel):
     role: UserRole
     is_active: bool
     subscription_type: SubscriptionType
+    total_xp: int
+    level: int
+    challenge_streak: int
+    longest_challenge_streak: int
     created_at: datetime
     last_login: Optional[datetime]

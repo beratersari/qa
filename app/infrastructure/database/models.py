@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Enum as SQLEnum, ForeignKey, JSON, Table
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Enum as SQLEnum, ForeignKey, JSON, Table, UniqueConstraint
 from sqlalchemy.orm import relationship
 from app.infrastructure.database.base import Base
 from app.domain.entities.user import UserRole, SubscriptionType
@@ -29,6 +29,9 @@ class UserModel(Base):
     is_active = Column(Boolean, default=True)
     is_verified = Column(Boolean, default=False)
     subscription_type = Column(SQLEnum(SubscriptionType), default=SubscriptionType.FREE)
+    total_xp = Column(Integer, default=0, nullable=False)
+    challenge_streak = Column(Integer, default=0, nullable=False)  # Current daily challenge streak
+    longest_challenge_streak = Column(Integer, default=0, nullable=False)  # Best streak ever
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     last_login = Column(DateTime, nullable=True)
@@ -82,6 +85,7 @@ class QuestionModel(Base):
     prompt = Column(String(500), nullable=False)
     choices = Column(JSON, default=list)
     answer_index = Column(Integer, nullable=False)
+    difficulty_level = Column(Integer, default=1, nullable=False)  # 1-10 difficulty
     created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -104,3 +108,71 @@ class QuestionSetModel(Base):
     
     creator = relationship("UserModel")
     questions = relationship("QuestionModel", secondary=question_set_association, back_populates="sets")
+
+
+class UserQuestionStatsModel(Base):
+    """SQLAlchemy model for UserQuestionStats - tracks user performance on questions"""
+    __tablename__ = "user_question_stats"
+    __table_args__ = (
+        UniqueConstraint('user_id', 'question_id', name='uq_user_question'),
+    )
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    question_id = Column(Integer, ForeignKey("questions.id"), nullable=False, index=True)
+    total_attempts = Column(Integer, default=0, nullable=False)
+    correct_attempts = Column(Integer, default=0, nullable=False)
+    last_seen_at = Column(DateTime, nullable=True)
+    last_result = Column(Boolean, nullable=True)
+    next_review_at = Column(DateTime, nullable=True, index=True)
+    streak = Column(Integer, default=0, nullable=False)  # Current streak of correct answers
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    user = relationship("UserModel")
+    question = relationship("QuestionModel")
+
+
+class LeaderboardDummyModel(Base):
+    """SQLAlchemy model for dummy leaderboard entries"""
+    __tablename__ = "leaderboard_dummies"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    display_name = Column(String(100), nullable=False)
+    solved_count = Column(Integer, default=0, nullable=False)
+    period = Column(String(20), nullable=False)  # last_7_days, last_30_days, all_time
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class DailyChallengeModel(Base):
+    """SQLAlchemy model for daily challenges"""
+    __tablename__ = "daily_challenges"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    challenge_date = Column(DateTime, nullable=False, unique=True, index=True)  # 00:00 UTC+3
+    question_ids = Column(JSON, default=list)  # List of 5 question IDs
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class UserChallengeProgressModel(Base):
+    """SQLAlchemy model for user challenge progress"""
+    __tablename__ = "user_challenge_progress"
+    __table_args__ = (
+        UniqueConstraint('user_id', 'challenge_id', name='uq_user_challenge'),
+    )
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    challenge_id = Column(Integer, ForeignKey("daily_challenges.id"), nullable=False, index=True)
+    completed_questions = Column(JSON, default=list)  # List of answered question IDs
+    is_completed = Column(Boolean, default=False)
+    xp_awarded = Column(Boolean, default=False)
+    completed_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    user = relationship("UserModel")
+    challenge = relationship("DailyChallengeModel")

@@ -17,6 +17,7 @@ class QuestionService:
             prompt=question_data.prompt,
             choices=question_data.choices,
             answer_index=question_data.answer_index,
+            difficulty_level=question_data.difficulty_level,
             created_by=created_by
         )
         return await self.question_repository.create(question)

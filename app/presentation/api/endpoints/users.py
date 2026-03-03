@@ -21,7 +21,21 @@ async def get_current_user_info(
     current_user: User = Depends(get_current_user)
 ):
     """Get current authenticated user information"""
-    return current_user
+    return UserResponse(
+        id=current_user.id,
+        email=current_user.email,
+        username=current_user.username,
+        full_name=current_user.full_name,
+        role=current_user.role,
+        is_active=current_user.is_active,
+        subscription_type=current_user.subscription_type,
+        total_xp=current_user.total_xp,
+        level=current_user.level,
+        challenge_streak=current_user.challenge_streak,
+        longest_challenge_streak=current_user.longest_challenge_streak,
+        created_at=current_user.created_at,
+        last_login=current_user.last_login
+    )
 
 
 @router.get("/{user_id}", response_model=UserResponse)
@@ -44,7 +58,21 @@ async def get_user(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
         )
-    return user
+    return UserResponse(
+        id=user.id,
+        email=user.email,
+        username=user.username,
+        full_name=user.full_name,
+        role=user.role,
+        is_active=user.is_active,
+        subscription_type=user.subscription_type,
+        total_xp=user.total_xp,
+        level=user.level,
+        challenge_streak=user.challenge_streak,
+        longest_challenge_streak=user.longest_challenge_streak,
+        created_at=user.created_at,
+        last_login=user.last_login
+    )
 
 
 @router.get("/", response_model=List[UserResponse])
@@ -55,7 +83,25 @@ async def list_users(
     current_user: User = Depends(get_current_admin)
 ):
     """List all users (Admin only)"""
-    return await user_service.get_all_users(skip, limit)
+    users = await user_service.get_all_users(skip, limit)
+    return [
+        UserResponse(
+            id=user.id,
+            email=user.email,
+            username=user.username,
+            full_name=user.full_name,
+            role=user.role,
+            is_active=user.is_active,
+            subscription_type=user.subscription_type,
+            total_xp=user.total_xp,
+            level=user.level,
+            challenge_streak=user.challenge_streak,
+            longest_challenge_streak=user.longest_challenge_streak,
+            created_at=user.created_at,
+            last_login=user.last_login
+        )
+        for user in users
+    ]
 
 
 @router.put("/{user_id}", response_model=UserResponse)
@@ -79,7 +125,21 @@ async def update_user(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
         )
-    return user
+    return UserResponse(
+        id=user.id,
+        email=user.email,
+        username=user.username,
+        full_name=user.full_name,
+        role=user.role,
+        is_active=user.is_active,
+        subscription_type=user.subscription_type,
+        total_xp=user.total_xp,
+        level=user.level,
+        challenge_streak=user.challenge_streak,
+        longest_challenge_streak=user.longest_challenge_streak,
+        created_at=user.created_at,
+        last_login=user.last_login
+    )
 
 
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -111,7 +171,21 @@ async def deactivate_user(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
         )
-    return user
+    return UserResponse(
+        id=user.id,
+        email=user.email,
+        username=user.username,
+        full_name=user.full_name,
+        role=user.role,
+        is_active=user.is_active,
+        subscription_type=user.subscription_type,
+        total_xp=user.total_xp,
+        level=user.level,
+        challenge_streak=user.challenge_streak,
+        longest_challenge_streak=user.longest_challenge_streak,
+        created_at=user.created_at,
+        last_login=user.last_login
+    )
 
 
 @router.patch("/{user_id}/activate", response_model=UserResponse)
@@ -127,7 +201,21 @@ async def activate_user(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
         )
-    return user
+    return UserResponse(
+        id=user.id,
+        email=user.email,
+        username=user.username,
+        full_name=user.full_name,
+        role=user.role,
+        is_active=user.is_active,
+        subscription_type=user.subscription_type,
+        total_xp=user.total_xp,
+        level=user.level,
+        challenge_streak=user.challenge_streak,
+        longest_challenge_streak=user.longest_challenge_streak,
+        created_at=user.created_at,
+        last_login=user.last_login
+    )
 
 
 @router.patch("/{user_id}/role", response_model=UserResponse)
@@ -144,4 +232,18 @@ async def change_user_role(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
         )
-    return user
+    return UserResponse(
+        id=user.id,
+        email=user.email,
+        username=user.username,
+        full_name=user.full_name,
+        role=user.role,
+        is_active=user.is_active,
+        subscription_type=user.subscription_type,
+        total_xp=user.total_xp,
+        level=user.level,
+        challenge_streak=user.challenge_streak,
+        longest_challenge_streak=user.longest_challenge_streak,
+        created_at=user.created_at,
+        last_login=user.last_login
+    )

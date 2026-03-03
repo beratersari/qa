@@ -27,6 +27,7 @@ class Question(BaseModel):
     prompt: str = Field(..., min_length=1, max_length=500)
     choices: List[str] = Field(default_factory=list)
     answer_index: int = Field(..., ge=0)
+    difficulty_level: int = Field(1, ge=1, le=10)
     created_by: Optional[int] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
@@ -63,6 +64,7 @@ class QuestionCreate(BaseModel):
     prompt: str = Field(..., min_length=1, max_length=500)
     choices: List[str] = Field(default_factory=list)
     answer_index: int = Field(..., ge=0)
+    difficulty_level: int = Field(1, ge=1, le=10)
 
     @field_validator('choices')
     @classmethod
@@ -85,6 +87,7 @@ class QuestionUpdate(BaseModel):
     prompt: Optional[str] = Field(None, min_length=1, max_length=500)
     choices: Optional[List[str]] = None
     answer_index: Optional[int] = Field(None, ge=0)
+    difficulty_level: Optional[int] = Field(None, ge=1, le=10)
 
     @field_validator('choices')
     @classmethod
@@ -104,6 +107,7 @@ class QuestionResponse(BaseModel):
     id: int
     prompt: str
     choices: List[dict]  # With letter labels
+    difficulty_level: int
     created_by: Optional[int]
     created_at: datetime
     updated_at: datetime
@@ -171,5 +175,6 @@ class QuestionInSetResponse(BaseModel):
     id: int
     prompt: str
     choices: List[dict]
+    difficulty_level: int
     set_id: int
     question_id: int
