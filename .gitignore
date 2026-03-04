@@ -6,7 +6,7 @@ __pycache__/
 # PyCharm ile ilgili dosya ve klasörler
 .idea/
 **/.idea/
-
+language_learning.db
 # Çalışma alanı dosyasını hariç tut
 *.iml
 *.iws
