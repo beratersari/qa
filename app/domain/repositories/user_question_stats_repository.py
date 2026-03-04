@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, date
 from app.domain.entities.user_question_stats import UserQuestionStats
 
 
@@ -50,4 +50,19 @@ class UserQuestionStatsRepository(ABC):
     @abstractmethod
     async def get_by_user_and_questions(self, user_id: int, question_ids: List[int]) -> List[UserQuestionStats]:
         """Get stats for multiple questions for a user"""
+        pass
+
+    @abstractmethod
+    async def get_daily_solved_counts(self, user_id: int, start_date: date, end_date: date) -> List[dict]:
+        """Get daily solved counts for a user within a date range"""
+        pass
+
+    @abstractmethod
+    async def get_lowest_accuracy_questions(self, user_id: int, limit: int = 10) -> List[dict]:
+        """Get questions with lowest accuracy for a user"""
+        pass
+
+    @abstractmethod
+    async def record_solved_question(self, user_id: int, question_id: int) -> None:
+        """Record a correct question submission"""
         pass

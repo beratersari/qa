@@ -1,10 +1,10 @@
-from datetime import datetime
+from datetime import datetime, date, timedelta
 from typing import List, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy import func, and_, or_
 from app.domain.entities.user_question_stats import UserQuestionStats
 from app.domain.repositories.user_question_stats_repository import UserQuestionStatsRepository
-from app.infrastructure.database.models import UserQuestionStatsModel
+from app.infrastructure.database.models import UserQuestionStatsModel, QuestionModel, SolvedQuestionModel
 from app.infrastructure.logging import get_logger
 
 logger = get_logger(__name__)
@@ -185,3 +185,96 @@ class SQLAlchemyUserQuestionStatsRepository(UserQuestionStatsRepository):
             )
         ).all()
         return [self._to_entity(s) for s in db_stats]
+
+    async def get_daily_solved_counts(self, user_id: int, start_date: date, end_date: date) -> List[dict]:
+        """Get daily solved counts for a user within a date range"""
+        start_datetime = datetime.combine(start_date, datetime.min.time())
+        end_datetime = datetime.combine(end_date, datetime.max.time())
+
+        # Query to get count of all correct submissions per day from SolvedQuestionModel
+        results = (
+            self.db.query(
+                func.date(SolvedQuestionModel.solved_at).label('day'),
+                func.count(SolvedQuestionModel.id).label('solved_count')
+            )
+            .filter(
+                and_(
+                    SolvedQuestionModel.user_id == user_id,
+                    SolvedQuestionModel.solved_at >= start_datetime,
+                    SolvedQuestionModel.solved_at <= end_datetime
+                )
+            )
+            .group_by(func.date(SolvedQuestionModel.solved_at))
+            .all()
+        )
+
+        # Create a dict of existing counts
+        counts_dict = {}
+        for r in results:
+            if r.day is None:
+                continue
+            if isinstance(r.day, date):
+                day_key = r.day
+            elif isinstance(r.day, str):
+                day_key = datetime.fromisoformat(r.day).date()
+            else:
+                day_key = r.day.date()
+            counts_dict[day_key] = r.solved_count
+
+        # Fill in all dates in the range with 0 if no data
+        daily_stats = []
+        current_date = start_date
+        while current_date <= end_date:
+            daily_stats.append({
+                'date': current_date,
+                'solved_count': counts_dict.get(current_date, 0)
+            })
+            current_date += timedelta(days=1)
+
+        return daily_stats
+
+    async def get_lowest_accuracy_questions(self, user_id: int, limit: int = 10) -> List[dict]:
+        """Get questions with lowest accuracy for a user"""
+        # Join with questions table to get prompt
+        results = (
+            self.db.query(
+                UserQuestionStatsModel.question_id,
+                QuestionModel.prompt,
+                UserQuestionStatsModel.total_attempts,
+                UserQuestionStatsModel.correct_attempts
+            )
+            .join(QuestionModel, UserQuestionStatsModel.question_id == QuestionModel.id)
+            .filter(
+                and_(
+                    UserQuestionStatsModel.user_id == user_id,
+                    UserQuestionStatsModel.total_attempts > 0
+                )
+            )
+            .all()
+        )
+
+        # Calculate accuracy and sort
+        questions_with_accuracy = []
+        for r in results:
+            accuracy = (r.correct_attempts / r.total_attempts * 100) if r.total_attempts > 0 else 0.0
+            questions_with_accuracy.append({
+                'question_id': r.question_id,
+                'prompt': r.prompt,
+                'total_attempts': r.total_attempts,
+                'correct_attempts': r.correct_attempts,
+                'accuracy': round(accuracy, 2)
+            })
+
+        # Sort by accuracy ascending and return top n
+        questions_with_accuracy.sort(key=lambda x: x['accuracy'])
+        return questions_with_accuracy[:limit]
+
+    async def record_solved_question(self, user_id: int, question_id: int) -> None:
+        """Record a correct question submission"""
+        db_solved = SolvedQuestionModel(
+            user_id=user_id,
+            question_id=question_id,
+            solved_at=datetime.utcnow()
+        )
+        self.db.add(db_solved)
+        self.db.commit()

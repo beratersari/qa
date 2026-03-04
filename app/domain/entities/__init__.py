@@ -2,6 +2,7 @@ from .user import User, UserCreate, UserUpdate, UserResponse, UserRole, Subscrip
 from .subscription import Subscription, SubscriptionCreate, SubscriptionUpdate, SubscriptionResponse, SubscriptionStatus, SubscriptionPlan
 from .flashcard import FlashCard, FlashCardCreate, FlashCardUpdate, FlashCardResponse
 from .question import Question, QuestionCreate, QuestionUpdate, QuestionResponse, QuestionAnswerResponse
+from .badge import Badge, BadgeCreate, BadgeUpdate, BadgeResponse, UserBadge, UserBadgeResponse, BadgeProgressType
 
 __all__ = [
     "User",
@@ -25,4 +26,11 @@ __all__ = [
     "QuestionUpdate",
     "QuestionResponse",
     "QuestionAnswerResponse",
+    "Badge",
+    "BadgeCreate",
+    "BadgeUpdate",
+    "BadgeResponse",
+    "UserBadge",
+    "UserBadgeResponse",
+    "BadgeProgressType",
 ]

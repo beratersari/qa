@@ -2,7 +2,7 @@ from datetime import datetime
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, Enum as SQLEnum, ForeignKey, JSON, Table, UniqueConstraint
 from sqlalchemy.orm import relationship
 from app.infrastructure.database.base import Base
-from app.domain.entities.user import UserRole, SubscriptionType
+from app.domain.entities.user import UserRole, SubscriptionType, ProfileVisibility
 from app.domain.entities.subscription import SubscriptionStatus, SubscriptionPlan
 from app.domain.entities.question import QuestionSetType
 
@@ -19,7 +19,7 @@ question_set_association = Table(
 class UserModel(Base):
     """SQLAlchemy model for User"""
     __tablename__ = "users"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True, index=True, nullable=False)
     username = Column(String, unique=True, index=True, nullable=False)
@@ -32,13 +32,19 @@ class UserModel(Base):
     total_xp = Column(Integer, default=0, nullable=False)
     challenge_streak = Column(Integer, default=0, nullable=False)  # Current daily challenge streak
     longest_challenge_streak = Column(Integer, default=0, nullable=False)  # Best streak ever
+    # Profile fields
+    profile_image_path = Column(String(500), nullable=True)
+    bio = Column(String(500), nullable=True)
+    contact_info = Column(String(200), nullable=True)
+    profile_visibility = Column(String(20), default="private", nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     last_login = Column(DateTime, nullable=True)
-    
-    # Relationship
+
+    # Relationships
     subscription = relationship("SubscriptionModel", back_populates="user", uselist=False)
     flashcards = relationship("FlashCardModel", back_populates="creator")
+    favorite_lists = relationship("FavoriteListModel", back_populates="user", cascade="all, delete-orphan")
 
 
 class SubscriptionModel(Base):
@@ -176,3 +182,106 @@ class UserChallengeProgressModel(Base):
     # Relationships
     user = relationship("UserModel")
     challenge = relationship("DailyChallengeModel")
+
+
+class FavoriteListModel(Base):
+    """SQLAlchemy model for Favorite Lists"""
+    __tablename__ = "favorite_lists"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(200), nullable=False)
+    description = Column(String(1000), nullable=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    is_default = Column(Boolean, default=False, nullable=False)
+    privacy = Column(String(20), default="private", nullable=False)
+    shared_with_usernames = Column(JSON, default=list)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    user = relationship("UserModel", back_populates="favorite_lists")
+    question_items = relationship("FavoriteQuestionModel", back_populates="favorite_list", cascade="all, delete-orphan")
+    flashcard_items = relationship("FavoriteFlashcardModel", back_populates="favorite_list", cascade="all, delete-orphan")
+
+
+class FavoriteQuestionModel(Base):
+    """SQLAlchemy model for Favorite Questions"""
+    __tablename__ = "favorite_questions"
+    __table_args__ = (
+        UniqueConstraint('favorite_list_id', 'question_id', name='uq_favorite_list_question'),
+    )
+    
+    id = Column(Integer, primary_key=True, index=True)
+    favorite_list_id = Column(Integer, ForeignKey("favorite_lists.id"), nullable=False, index=True)
+    question_id = Column(Integer, ForeignKey("questions.id"), nullable=False, index=True)
+    added_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    favorite_list = relationship("FavoriteListModel", back_populates="question_items")
+    question = relationship("QuestionModel")
+
+
+class FavoriteFlashcardModel(Base):
+    """SQLAlchemy model for Favorite Flashcards"""
+    __tablename__ = "favorite_flashcards"
+    __table_args__ = (
+        UniqueConstraint('favorite_list_id', 'flashcard_id', name='uq_favorite_list_flashcard'),
+    )
+    
+    id = Column(Integer, primary_key=True, index=True)
+    favorite_list_id = Column(Integer, ForeignKey("favorite_lists.id"), nullable=False, index=True)
+    flashcard_id = Column(Integer, ForeignKey("flashcards.id"), nullable=False, index=True)
+    added_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    favorite_list = relationship("FavoriteListModel", back_populates="flashcard_items")
+    flashcard = relationship("FlashCardModel")
+
+
+class BadgeModel(Base):
+    """SQLAlchemy model for badges"""
+    __tablename__ = "badges"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(150), nullable=False, unique=True)
+    description = Column(String(500), nullable=True)
+    icon_path = Column(String(500), nullable=True)
+    conditions = Column(JSON, default=list)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    user_badges = relationship("UserBadgeModel", back_populates="badge", cascade="all, delete-orphan")
+
+
+class UserBadgeModel(Base):
+    """SQLAlchemy model for user badge progress"""
+    __tablename__ = "user_badges"
+    __table_args__ = (
+        UniqueConstraint('user_id', 'badge_id', name='uq_user_badge'),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    badge_id = Column(Integer, ForeignKey("badges.id"), nullable=False, index=True)
+    current_progress = Column(Integer, default=0, nullable=False)
+    is_completed = Column(Boolean, default=False)
+    completed_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    user = relationship("UserModel")
+    badge = relationship("BadgeModel", back_populates="user_badges")
+
+
+class SolvedQuestionModel(Base):
+    """SQLAlchemy model for recording every correct question submission"""
+    __tablename__ = "solved_questions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    question_id = Column(Integer, ForeignKey("questions.id"), nullable=False, index=True)
+    solved_at = Column(DateTime, default=datetime.utcnow, index=True)
+
+    # Relationships
+    user = relationship("UserModel")
+    question = relationship("QuestionModel")

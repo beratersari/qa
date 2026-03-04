@@ -27,6 +27,10 @@ class SQLAlchemyUserRepository(UserRepository):
             total_xp=model.total_xp,
             challenge_streak=model.challenge_streak,
             longest_challenge_streak=model.longest_challenge_streak,
+            profile_image_path=model.profile_image_path,
+            bio=model.bio,
+            contact_info=model.contact_info,
+            profile_visibility=model.profile_visibility,
             created_at=model.created_at,
             updated_at=model.updated_at,
             last_login=model.last_login
@@ -43,7 +47,11 @@ class SQLAlchemyUserRepository(UserRepository):
             is_active=user.is_active,
             is_verified=user.is_verified,
             subscription_type=user.subscription_type,
-            total_xp=user.total_xp
+            total_xp=user.total_xp,
+            profile_image_path=user.profile_image_path,
+            bio=user.bio,
+            contact_info=user.contact_info,
+            profile_visibility=user.profile_visibility.value if hasattr(user.profile_visibility, "value") else user.profile_visibility
         )
         self.db.add(db_user)
         self.db.commit()
@@ -84,6 +92,8 @@ class SQLAlchemyUserRepository(UserRepository):
         
         for key, value in user_data.items():
             if hasattr(db_user, key):
+                if key == "profile_visibility" and hasattr(value, "value"):
+                    value = value.value
                 setattr(db_user, key, value)
         
         db_user.updated_at = datetime.utcnow()

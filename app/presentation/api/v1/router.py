@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.presentation.api.endpoints import auth, users, subscriptions, flashcards, questions, question_sets, user_stats, leaderboard, challenge
+from app.presentation.api.endpoints import auth, users, subscriptions, flashcards, questions, question_sets, user_stats, leaderboard, challenge, favorites, badges
 
 api_router = APIRouter(prefix="/v1")
 
@@ -12,3 +12,5 @@ api_router.include_router(question_sets.router)
 api_router.include_router(user_stats.router)
 api_router.include_router(leaderboard.router)
 api_router.include_router(challenge.router)
+api_router.include_router(favorites.router)
+api_router.include_router(badges.router)

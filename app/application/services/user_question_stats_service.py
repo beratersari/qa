@@ -12,7 +12,7 @@ Spaced Repetition Logic:
   - Reset to +1 day (or immediate if streak was already 0)
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from typing import List, Optional, Tuple
 from app.domain.entities.user_question_stats import (
     UserQuestionStats,
@@ -20,6 +20,10 @@ from app.domain.entities.user_question_stats import (
     QuestionAnswerResult,
     UserQuestionStatsResponse,
     UserStatsSummary,
+    DailySolvedStats,
+    DailySolvedStatsResponse,
+    QuestionAccuracy,
+    LowestAccuracyQuestionsResponse,
 )
 from app.domain.entities.question import Question
 from app.domain.repositories.user_question_stats_repository import UserQuestionStatsRepository
@@ -153,6 +157,10 @@ class UserQuestionStatsService:
 
         # Save to database
         saved_stats = await self.stats_repository.upsert(updated_stats)
+
+        # Record solved question for daily statistics if correct
+        if is_correct:
+            await self.stats_repository.record_solved_question(user_id, answer_data.question_id)
 
         # Award XP for first-time correct solve
         if is_correct:
@@ -315,5 +323,67 @@ class UserQuestionStatsService:
             f"Reset question stats",
             extra={"user_id": user_id, "question_id": question_id}
         )
-        
+
         return True
+
+    async def get_daily_solved_stats(self, user_id: int, days: int = 7) -> DailySolvedStatsResponse:
+        """
+        Get daily solved question counts for the last N days.
+
+        Args:
+            user_id: ID of the user
+            days: Number of days to look back (7 or 30)
+
+        Returns:
+            DailySolvedStatsResponse with daily counts
+        """
+        end_date = date.today()
+        start_date = end_date - timedelta(days=days - 1)
+
+        daily_counts = await self.stats_repository.get_daily_solved_counts(
+            user_id, start_date, end_date
+        )
+
+        daily_stats = [
+            DailySolvedStats(date=stat['date'], solved_count=stat['solved_count'])
+            for stat in daily_counts
+        ]
+
+        total_solved = sum(stat.solved_count for stat in daily_stats)
+        average_per_day = round(total_solved / days, 2) if days > 0 else 0.0
+
+        return DailySolvedStatsResponse(
+            period=f"last_{days}_days",
+            daily_stats=daily_stats,
+            total_solved=total_solved,
+            average_per_day=average_per_day
+        )
+
+    async def get_lowest_accuracy_questions(self, user_id: int, limit: int = 10) -> LowestAccuracyQuestionsResponse:
+        """
+        Get questions with the lowest accuracy for a user.
+
+        Args:
+            user_id: ID of the user
+            limit: Maximum number of questions to return
+
+        Returns:
+            LowestAccuracyQuestionsResponse with question list
+        """
+        questions_data = await self.stats_repository.get_lowest_accuracy_questions(user_id, limit)
+
+        questions = [
+            QuestionAccuracy(
+                question_id=q['question_id'],
+                prompt=q['prompt'],
+                total_attempts=q['total_attempts'],
+                correct_attempts=q['correct_attempts'],
+                accuracy=q['accuracy']
+            )
+            for q in questions_data
+        ]
+
+        return LowestAccuracyQuestionsResponse(
+            questions=questions,
+            count=len(questions)
+        )

@@ -4,6 +4,8 @@ from .subscription_service import SubscriptionService
 from .flashcard_service import FlashCardService
 from .question_service import QuestionService, QuestionSetService
 from .leaderboard_service import LeaderboardService
+from .favorite_service import FavoriteService
+from .badge_service import BadgeService
 
 __all__ = [
     "AuthService",
@@ -12,5 +14,7 @@ __all__ = [
     "FlashCardService",
     "QuestionService",
     "QuestionSetService",
-    "LeaderboardService"
+    "LeaderboardService",
+    "FavoriteService",
+    "BadgeService"
 ]

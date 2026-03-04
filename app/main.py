@@ -7,7 +7,7 @@ from app.infrastructure.config.settings import get_settings
 from app.infrastructure.database import engine, Base, SessionLocal
 from app.presentation.api.v1.router import api_router
 from app.infrastructure.security import hash_password
-from app.infrastructure.database.models import UserModel, FlashCardModel, QuestionModel, QuestionSetModel, UserQuestionStatsModel, LeaderboardDummyModel, DailyChallengeModel, UserChallengeProgressModel
+from app.infrastructure.database.models import UserModel, FlashCardModel, QuestionModel, QuestionSetModel, UserQuestionStatsModel, LeaderboardDummyModel, DailyChallengeModel, UserChallengeProgressModel, FavoriteListModel, FavoriteQuestionModel, FavoriteFlashcardModel, BadgeModel, UserBadgeModel, SolvedQuestionModel
 from app.domain.entities.user import UserRole, SubscriptionType
 from app.domain.entities.question import QuestionSetType
 from app.infrastructure.logging import setup_logging, get_logger
@@ -197,11 +197,72 @@ async def lifespan(app: FastAPI):
                 subscription_type=SubscriptionType.FREE,
                 total_xp=110,
                 challenge_streak=0,
-                longest_challenge_streak=1
+                longest_challenge_streak=1,
+                profile_image_path="/static/images/default_avatar.png",
+                bio="New user exploring the platform",
+                contact_info="user10@example.com",
+                profile_visibility="public"
             )
             db.add(fallback_user)
             db.commit()
             logger.info("Fallback user seeded", extra={"user_id": fallback_user.id})
+
+        # Add profile data to existing users if they don't have it
+        all_users = db.query(UserModel).all()
+        for idx, user in enumerate(all_users):
+            if user.bio is None:
+                bios = [
+                    "Learning enthusiast and quiz lover",
+                    "Language learner aiming for fluency",
+                    "Casual learner enjoying the journey",
+                    "Dedicated student of knowledge",
+                    "Trivia master in training",
+                    "Words are my passion",
+                    "Exploring new horizons daily",
+                    "Knowledge seeker and achiever",
+                    "Making learning fun every day",
+                    "Always curious, always learning"
+                ]
+                profile_images = [
+                    "/static/images/avatar1.png",
+                    "/static/images/avatar2.png",
+                    "/static/images/avatar3.png",
+                    "/static/images/avatar4.png",
+                    "/static/images/avatar5.png",
+                    None,
+                    "/static/images/avatar7.png",
+                    "/static/images/avatar8.png",
+                    None,
+                    "/static/images/avatar10.png"
+                ]
+                visibilities = ["public", "private", "public", "private", "public", "private", "public", "private", "public", "private"]
+                user.bio = bios[idx % len(bios)]
+                user.profile_image_path = profile_images[idx % len(profile_images)]
+                user.contact_info = f"Contact {user.username} at their profile"
+                user.profile_visibility = visibilities[idx % len(visibilities)]
+        db.commit()
+        logger.info("User profiles enriched with mock data")
+
+        # Create default favorite lists for users who don't have one
+        all_users = db.query(UserModel).all()
+        for user in all_users:
+            existing_default = (
+                db.query(FavoriteListModel)
+                .filter(FavoriteListModel.user_id == user.id, FavoriteListModel.is_default == True)
+                .first()
+            )
+            if not existing_default:
+                default_list = FavoriteListModel(
+                    name="Favorites",
+                    description="My default favorites list",
+                    user_id=user.id,
+                    is_default=True,
+                    privacy="private",
+                    shared_with_usernames=[]
+                )
+                db.add(default_list)
+        db.commit()
+        logger.info("Default favorite lists ensured for all users")
 
         # Seed mock questions if none exist
         if db.query(QuestionModel).count() == 0:
@@ -387,6 +448,49 @@ async def lifespan(app: FastAPI):
             db.commit()
             logger.info("Mock flashcards seeded", extra={"count": len(mock_flashcards)})
 
+        # Seed mock favorite lists and items if none exist
+        if db.query(FavoriteListModel).count() > 0 and db.query(FavoriteQuestionModel).count() == 0 and db.query(FavoriteFlashcardModel).count() == 0:
+            users = db.query(UserModel).all()
+            questions = db.query(QuestionModel).all()
+            flashcards = db.query(FlashCardModel).all()
+            if users and questions and flashcards:
+                # Create some public and shared lists
+                public_list = FavoriteListModel(
+                    name="Exam Essentials",
+                    description="Key questions and flashcards for exam prep",
+                    user_id=users[0].id,
+                    is_default=False,
+                    privacy="public",
+                    shared_with_usernames=[]
+                )
+                shared_list = FavoriteListModel(
+                    name="Shared Practice",
+                    description="Shared practice set",
+                    user_id=users[1].id,
+                    is_default=False,
+                    privacy="shared",
+                    shared_with_usernames=[users[2].username, users[3].username]
+                )
+                db.add_all([public_list, shared_list])
+                db.commit()
+                db.refresh(public_list)
+                db.refresh(shared_list)
+
+                # Add questions to lists
+                for question in questions[:3]:
+                    db.add(FavoriteQuestionModel(favorite_list_id=public_list.id, question_id=question.id))
+                for question in questions[3:6]:
+                    db.add(FavoriteQuestionModel(favorite_list_id=shared_list.id, question_id=question.id))
+
+                # Add flashcards to lists
+                for flashcard in flashcards[:3]:
+                    db.add(FavoriteFlashcardModel(favorite_list_id=public_list.id, flashcard_id=flashcard.id))
+                for flashcard in flashcards[3:6]:
+                    db.add(FavoriteFlashcardModel(favorite_list_id=shared_list.id, flashcard_id=flashcard.id))
+
+                db.commit()
+                logger.info("Mock favorite lists and items seeded")
+
         # Seed mock leaderboard dummy entries if none exist
         if db.query(LeaderboardDummyModel).count() == 0:
             mock_dummies = [
@@ -405,28 +509,113 @@ async def lifespan(app: FastAPI):
             db.commit()
             logger.info("Mock leaderboard dummies seeded", extra={"count": len(mock_dummies)})
 
+        # Seed mock badges if none exist
+        if db.query(BadgeModel).count() == 0:
+            mock_badges = [
+                BadgeModel(
+                    name="Question Set Explorer",
+                    description="Solve 10 question sets",
+                    icon_path="/static/badges/question_sets_10.png",
+                    conditions=[
+                        {"progress_type": "question_sets_solved", "progress_target": 10}
+                    ]
+                ),
+                BadgeModel(
+                    name="Flashcard Sprinter",
+                    description="Solve 100 flashcards",
+                    icon_path="/static/badges/flashcards_100.png",
+                    conditions=[
+                        {"progress_type": "flashcards_solved", "progress_target": 100}
+                    ]
+                ),
+                BadgeModel(
+                    name="Question Master",
+                    description="Solve 250 questions",
+                    icon_path="/static/badges/questions_250.png",
+                    conditions=[
+                        {"progress_type": "questions_solved", "progress_target": 250}
+                    ]
+                ),
+                BadgeModel(
+                    name="Well-Rounded Learner",
+                    description="Solve 3 question sets and 50 flashcards",
+                    icon_path="/static/badges/well_rounded.png",
+                    conditions=[
+                        {"progress_type": "question_sets_solved", "progress_target": 3},
+                        {"progress_type": "flashcards_solved", "progress_target": 50}
+                    ]
+                )
+            ]
+            db.add_all(mock_badges)
+            db.commit()
+            logger.info("Mock badges seeded", extra={"count": len(mock_badges)})
+
+        # Seed mock user badge progress if none exist
+        if db.query(UserBadgeModel).count() == 0:
+            users = db.query(UserModel).all()
+            badges = db.query(BadgeModel).all()
+            if users and badges:
+                progress_samples = [3, 25, 80, 120, 200]
+                for index, user in enumerate(users[:5]):
+                    for badge in badges:
+                        current_progress = progress_samples[index % len(progress_samples)]
+                        target = max(condition.get("progress_target", 0) for condition in badge.conditions) if badge.conditions else 0
+                        is_completed = current_progress >= target
+                        completed_at = datetime.utcnow() if is_completed else None
+                        db.add(
+                            UserBadgeModel(
+                                user_id=user.id,
+                                badge_id=badge.id,
+                                current_progress=current_progress,
+                                is_completed=is_completed,
+                                completed_at=completed_at
+                            )
+                        )
+                db.commit()
+                logger.info("Mock user badge progress seeded")
+
         # Seed mock user question stats if none exist
         if db.query(UserQuestionStatsModel).count() == 0:
             questions = db.query(QuestionModel).all()
-            if questions:
+            users = db.query(UserModel).all()
+            if questions and users:
                 now = datetime.utcnow()
                 mock_stats = []
-                for index, question in enumerate(questions[:10]):
-                    mock_stats.append(
-                        UserQuestionStatsModel(
-                            user_id=admin_user.id,
-                            question_id=question.id,
-                            total_attempts=3 + index,
-                            correct_attempts=2 + (index % 2),
-                            last_seen_at=now - timedelta(days=index),
-                            last_result=index % 2 == 0,
-                            next_review_at=now + timedelta(days=1 + index),
-                            streak=index % 5
+                solved_entries = []
+                # Create stats for multiple users with varied data
+                for user in users[:5]:
+                    for index, question in enumerate(questions[:10]):
+                        # Vary the data based on user and question
+                        total_attempts = 3 + (index % 5) + (user.id % 3)
+                        correct_attempts = max(1, total_attempts - (index % 4))
+                        day_offset = (index + user.id) % 30
+                        solved_at = now - timedelta(days=day_offset)
+                        mock_stats.append(
+                            UserQuestionStatsModel(
+                                user_id=user.id,
+                                question_id=question.id,
+                                total_attempts=total_attempts,
+                                correct_attempts=correct_attempts,
+                                last_seen_at=solved_at,
+                                last_result=index % 3 == 0,
+                                next_review_at=now + timedelta(days=1 + index),
+                                streak=index % 5
+                            )
                         )
-                    )
+                        # Seed solved questions for each correct attempt
+                        for _ in range(correct_attempts):
+                            solved_entries.append(
+                                SolvedQuestionModel(
+                                    user_id=user.id,
+                                    question_id=question.id,
+                                    solved_at=solved_at
+                                )
+                            )
                 db.add_all(mock_stats)
+                db.add_all(solved_entries)
                 db.commit()
                 logger.info("Mock user question stats seeded", extra={"count": len(mock_stats)})
+                logger.info("Mock solved questions seeded", extra={"count": len(solved_entries)})
 
         # Seed mock daily challenges if none exist
         if db.query(DailyChallengeModel).count() == 0:

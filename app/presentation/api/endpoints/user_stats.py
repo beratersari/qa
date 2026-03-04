@@ -1,5 +1,5 @@
 from typing import List
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from app.infrastructure.database import get_db
 from app.infrastructure.database.user_question_stats_repository_impl import SQLAlchemyUserQuestionStatsRepository
@@ -11,6 +11,8 @@ from app.domain.entities.user_question_stats import (
     QuestionAnswerResult,
     UserQuestionStatsResponse,
     UserStatsSummary,
+    DailySolvedStatsResponse,
+    LowestAccuracyQuestionsResponse,
 )
 from app.domain.entities.user import User
 from app.presentation.middleware.auth_middleware import get_current_user, get_current_admin
@@ -91,13 +93,52 @@ async def get_questions_for_review(
 ):
     """
     Get questions that are due for review.
-    
+
     Returns questions where:
     - next_review_at <= now (due for review)
     - OR never seen before (no stats exist)
     """
     questions = await stats_service.get_questions_for_review(current_user.id, limit)
     return questions
+
+
+@router.get("/daily-solved", response_model=DailySolvedStatsResponse)
+async def get_daily_solved_stats(
+    days: int = Query(7, ge=1, le=30, description="Number of days to look back (1-30)"),
+    stats_service: UserQuestionStatsService = Depends(get_stats_service),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Get daily solved question counts for the last N days.
+
+    Use this endpoint to populate a line chart showing solved questions over time.
+    Common values for `days`: 7 (last week) or 30 (last month).
+
+    Returns:
+    - period: The time period string
+    - daily_stats: List of {date, solved_count} for each day
+    - total_solved: Total questions solved in the period
+    - average_per_day: Average solved per day
+    """
+    return await stats_service.get_daily_solved_stats(current_user.id, days)
+
+
+@router.get("/lowest-accuracy", response_model=LowestAccuracyQuestionsResponse)
+async def get_lowest_accuracy_questions(
+    limit: int = Query(10, ge=1, le=50, description="Maximum number of questions to return"),
+    stats_service: UserQuestionStatsService = Depends(get_stats_service),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Get questions with the lowest accuracy for the current user.
+
+    This is useful for identifying questions that need more practice.
+
+    Returns:
+    - questions: List of questions with accuracy info, sorted by accuracy ascending
+    - count: Number of questions returned
+    """
+    return await stats_service.get_lowest_accuracy_questions(current_user.id, limit)
 
 
 @router.get("/{question_id}", response_model=UserQuestionStatsResponse)
