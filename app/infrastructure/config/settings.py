@@ -29,6 +29,9 @@ class Settings(BaseSettings):
     LOG_CONSOLE: bool = True  # Enable console logging
     LOG_JSON_FILE: bool = True  # Use JSON format for file logs (Elasticsearch-compatible)
     
+    # CORS
+    CORS_ORIGINS: list[str] = ["http://localhost:8081", "http://localhost:8082", "http://localhost:8083"]
+    
     model_config = {"env_file": ".env"}
 
 
