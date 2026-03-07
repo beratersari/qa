@@ -62,3 +62,12 @@ class SubscriptionResponse(BaseModel):
     auto_renew: bool
     created_at: datetime
     cancelled_at: Optional[datetime]
+
+
+class SubscriptionPlanResponse(BaseModel):
+    """DTO for subscription plan response"""
+    name: SubscriptionPlan
+    label: str
+    description: str
+    price_cents: int
+    interval: str

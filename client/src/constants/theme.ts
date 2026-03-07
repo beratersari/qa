@@ -7,20 +7,40 @@ import '@/global.css';
 
 import { Platform } from 'react-native';
 
+export const DefaultTheme = {
+  text: '#4C5C2D',
+  background: '#FFFBF1',
+  backgroundElement: '#FFF2D0',
+  backgroundSelected: '#FFB2B2',
+  textSecondary: '#6A7E3F',
+  inputBackground: '#FBF6F6',
+  inputBorder: '#FFB2B2',
+  inputBorderFocused: '#D96868',
+  inputBorderError: '#E36A6A',
+  inputPlaceholder: '#6A7E3F',
+  error: '#E36A6A',
+  primary: '#D96868',
+  primaryHover: '#E36A6A',
+  buttonDisabled: '#FFB2B2',
+} as const;
+
+export type ThemeColors = typeof DefaultTheme;
+
 export const Colors = {
-  light: {
-    text: '#000000',
-    background: '#ffffff',
-    backgroundElement: '#F0F0F3',
-    backgroundSelected: '#E0E1E6',
-    textSecondary: '#60646C',
-  },
+  light: DefaultTheme,
   dark: {
-    text: '#ffffff',
-    background: '#000000',
-    backgroundElement: '#212225',
-    backgroundSelected: '#2E3135',
-    textSecondary: '#B0B4BA',
+    ...DefaultTheme,
+    text: '#FFFBF1',
+    background: '#4C5C2D',
+    backgroundElement: '#6A7E3F',
+    backgroundSelected: '#D96868',
+    textSecondary: '#FFF2D0',
+    inputBackground: '#4C5C2D',
+    inputBorder: '#6A7E3F',
+    inputBorderFocused: '#FFB2B2',
+    inputBorderError: '#E36A6A',
+    inputPlaceholder: '#FFF2D0',
+    buttonDisabled: '#6A7E3F',
   },
 } as const;
 

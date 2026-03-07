@@ -3,12 +3,14 @@
  * https://docs.expo.dev/guides/color-schemes/
  */
 
-import { Colors } from '@/constants/theme';
+import { Colors, ThemeColors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useAppSelector } from '@/store';
 
-export function useTheme() {
+export function useTheme(): ThemeColors {
   const scheme = useColorScheme();
   const theme = scheme === 'unspecified' ? 'light' : scheme;
+  const customTheme = useAppSelector((state) => state.auth.themeOverrides);
 
-  return Colors[theme];
+  return customTheme ? { ...Colors[theme], ...customTheme } : Colors[theme];
 }
