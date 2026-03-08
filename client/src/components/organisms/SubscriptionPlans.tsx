@@ -44,10 +44,13 @@ export function SubscriptionPlans({
   const theme = useTheme();
   const displayPlans = plans.length > 0 ? plans : DEFAULT_PLANS;
 
+  // Check if subscription is truly active (status === 'active')
+  const isSubscriptionActive = activeSubscription?.status === 'active';
+
   return (
     <View style={styles.container}>
       {displayPlans.map((plan) => {
-        const isActive = activeSubscription?.plan === plan.name;
+        const isActive = isSubscriptionActive && activeSubscription?.plan === plan.name;
         const isLoading = loadingPlan === plan.name || loadingPlan === 'subscribe';
         return (
           <View

@@ -17,6 +17,11 @@ class LeaderboardRepository(ABC):
         pass
 
     @abstractmethod
+    async def get_public_user_xp(self) -> List[dict]:
+        """Get public users ordered by total XP"""
+        pass
+
+    @abstractmethod
     async def get_dummy_entries(self, period: LeaderboardPeriod) -> List[dict]:
         """Get dummy leaderboard entries for period"""
         pass

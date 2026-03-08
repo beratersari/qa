@@ -45,6 +45,7 @@ class UserModel(Base):
     subscription = relationship("SubscriptionModel", back_populates="user", uselist=False)
     flashcards = relationship("FlashCardModel", back_populates="creator")
     favorite_lists = relationship("FavoriteListModel", back_populates="user", cascade="all, delete-orphan")
+    flashcard_sets = relationship("FlashCardSetModel", back_populates="creator", cascade="all, delete-orphan")
 
 
 class SubscriptionModel(Base):
@@ -81,6 +82,72 @@ class FlashCardModel(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     creator = relationship("UserModel", back_populates="flashcards")
+    set_links = relationship("FlashCardSetItemModel", back_populates="flashcard", cascade="all, delete-orphan")
+
+
+class FlashCardSetModel(Base):
+    """SQLAlchemy model for FlashCard Set"""
+    __tablename__ = "flashcard_sets"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(200), nullable=False)
+    description = Column(String(1000), nullable=True)
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    creator = relationship("UserModel", back_populates="flashcard_sets")
+    flashcards = relationship("FlashCardSetItemModel", back_populates="flashcard_set", cascade="all, delete-orphan")
+    sessions = relationship("FlashCardSessionModel", back_populates="flashcard_set", cascade="all, delete-orphan")
+    progress_items = relationship("FlashCardProgressModel", back_populates="flashcard_set", cascade="all, delete-orphan")
+
+
+class FlashCardSetItemModel(Base):
+    """SQLAlchemy model for FlashCard set items"""
+    __tablename__ = "flashcard_set_items"
+    __table_args__ = (
+        UniqueConstraint('flashcard_id', 'set_id', name='uq_flashcard_set_item'),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    set_id = Column(Integer, ForeignKey("flashcard_sets.id"), nullable=False, index=True)
+    flashcard_id = Column(Integer, ForeignKey("flashcards.id"), nullable=False, index=True)
+    added_at = Column(DateTime, default=datetime.utcnow)
+
+    flashcard_set = relationship("FlashCardSetModel", back_populates="flashcards")
+    flashcard = relationship("FlashCardModel", back_populates="set_links")
+
+
+class FlashCardSessionModel(Base):
+    """SQLAlchemy model for FlashCard sessions"""
+    __tablename__ = "flashcard_sessions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    set_id = Column(Integer, ForeignKey("flashcard_sets.id"), nullable=False, index=True)
+    started_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("UserModel")
+    flashcard_set = relationship("FlashCardSetModel", back_populates="sessions")
+
+
+class FlashCardProgressModel(Base):
+    """SQLAlchemy model for FlashCard progress tracking"""
+    __tablename__ = "flashcard_progress"
+    __table_args__ = (
+        UniqueConstraint('user_id', 'set_id', 'flashcard_id', name='uq_flashcard_progress'),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    set_id = Column(Integer, ForeignKey("flashcard_sets.id"), nullable=False, index=True)
+    flashcard_id = Column(Integer, ForeignKey("flashcards.id"), nullable=False, index=True)
+    status = Column(String(20), nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    user = relationship("UserModel")
+    flashcard_set = relationship("FlashCardSetModel", back_populates="progress_items")
+    flashcard = relationship("FlashCardModel")
 
 
 class QuestionModel(Base):

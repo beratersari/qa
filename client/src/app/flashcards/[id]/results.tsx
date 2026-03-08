@@ -11,6 +11,7 @@ import { Spacing } from '@/constants/theme';
 export default function FlashcardResultsScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ known?: string; unknown?: string; id?: string }>();
+  const setId = params.id;
   const known = Number(params.known ?? 0);
   const unknown = Number(params.unknown ?? 0);
 
@@ -18,8 +19,8 @@ export default function FlashcardResultsScreen() {
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.push('/flashcards')} style={styles.backButton}>
-            <ThemedText type="small" themeColor="primary">Back to List</ThemedText>
+          <TouchableOpacity onPress={() => router.replace(setId ? `/flashcards/${setId}` : '/flashcards')} style={styles.backButton}>
+            <ThemedText type="small" themeColor="primary">Back to Set</ThemedText>
           </TouchableOpacity>
           <ThemedText type="smallBold">Session Results</ThemedText>
           <View style={styles.backButtonPlaceholder} />
@@ -34,7 +35,7 @@ export default function FlashcardResultsScreen() {
           <ThemedText type="subtitle">{unknown}</ThemedText>
         </View>
 
-        <Button title="Back to Flashcards" onPress={() => router.push('/flashcards')} />
+        <Button title="Back to Set" onPress={() => router.replace(setId ? `/flashcards/${setId}` : '/flashcards')} />
       </SafeAreaView>
     </ThemedView>
   );

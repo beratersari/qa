@@ -1,7 +1,7 @@
 from .auth_service import AuthService
 from .user_service import UserService
 from .subscription_service import SubscriptionService
-from .flashcard_service import FlashCardService
+from .flashcard_service import FlashCardService, FlashCardSetService
 from .question_service import QuestionService, QuestionSetService
 from .leaderboard_service import LeaderboardService
 from .favorite_service import FavoriteService
@@ -12,6 +12,7 @@ __all__ = [
     "UserService",
     "SubscriptionService",
     "FlashCardService",
+    "FlashCardSetService",
     "QuestionService",
     "QuestionSetService",
     "LeaderboardService",

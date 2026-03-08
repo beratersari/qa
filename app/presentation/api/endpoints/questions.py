@@ -91,9 +91,9 @@ async def list_questions(
 async def get_question_answer(
     question_id: int,
     question_service: QuestionService = Depends(get_question_service),
-    current_user: User = Depends(get_current_admin)
+    current_user: User = Depends(get_current_user)
 ):
-    """Get question answer (Admin only)"""
+    """Get question answer"""
     question = await question_service.get_question(question_id)
     if not question:
         raise HTTPException(

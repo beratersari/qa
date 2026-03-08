@@ -5,6 +5,7 @@ from sqlalchemy import func, and_, or_, desc
 from app.domain.entities.leaderboard import LeaderboardPeriod
 from app.domain.repositories.leaderboard_repository import LeaderboardRepository
 from app.infrastructure.database.models import UserQuestionStatsModel, UserModel, LeaderboardDummyModel
+from app.domain.entities.user import ProfileVisibility
 from app.infrastructure.logging import get_logger
 
 logger = get_logger(__name__)
@@ -64,6 +65,30 @@ class SQLAlchemyLeaderboardRepository(LeaderboardRepository):
                 "display_name": row.display_name,
                 "solved_count": row.solved_count,
                 "period": row.period,
+            }
+            for row in results
+        ]
+
+    async def get_public_user_xp(self) -> List[dict]:
+        """Get public users ordered by total XP"""
+        results = (
+            self.db.query(
+                UserModel.id,
+                UserModel.username,
+                UserModel.total_xp,
+                UserModel.challenge_streak
+            )
+            .filter(UserModel.profile_visibility == ProfileVisibility.PUBLIC)
+            .order_by(UserModel.total_xp.desc())
+            .all()
+        )
+
+        return [
+            {
+                "user_id": row.id,
+                "display_name": row.username,
+                "total_xp": row.total_xp,
+                "challenge_streak": row.challenge_streak,
             }
             for row in results
         ]

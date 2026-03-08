@@ -11,7 +11,9 @@ from app.domain.entities.leaderboard import (
     LeaderboardPeriod,
     LeaderboardEntry,
     LeaderboardResponse,
-    LeaderboardDummyCreate
+    LeaderboardDummyCreate,
+    XpLeaderboardEntry,
+    XpLeaderboardResponse
 )
 from app.domain.repositories.leaderboard_repository import LeaderboardRepository
 from app.infrastructure.logging import get_logger
@@ -56,6 +58,7 @@ class LeaderboardService:
             all_entries.append({
                 "display_name": user["display_name"],
                 "solved_count": user["solved_count"],
+                "total_xp": user.get("total_xp", 0),
                 "user_id": user["user_id"],
                 "is_dummy": False
             })
@@ -65,6 +68,7 @@ class LeaderboardService:
             all_entries.append({
                 "display_name": dummy["display_name"],
                 "solved_count": dummy["solved_count"],
+                "total_xp": dummy.get("total_xp", 0),
                 "user_id": None,
                 "is_dummy": True
             })
@@ -81,6 +85,7 @@ class LeaderboardService:
                 rank=index,
                 display_name=entry["display_name"],
                 solved_count=entry["solved_count"],
+                total_xp=entry["total_xp"],
                 user_id=entry["user_id"],
                 is_dummy=entry["is_dummy"]
             ))
@@ -101,6 +106,25 @@ class LeaderboardService:
             solved_count=dummy_data.solved_count,
             period=dummy_data.period
         )
+
+    async def get_xp_leaderboard(self, current_user_id: Optional[int] = None) -> XpLeaderboardResponse:
+        """Get XP leaderboard for public users"""
+        users = await self.leaderboard_repository.get_public_user_xp()
+
+        entries = []
+        current_user_rank = None
+        for index, user in enumerate(users, start=1):
+            entries.append(XpLeaderboardEntry(
+                rank=index,
+                display_name=user["display_name"],
+                total_xp=user["total_xp"],
+                challenge_streak=user["challenge_streak"],
+                user_id=user["user_id"]
+            ))
+            if current_user_id and user["user_id"] == current_user_id:
+                current_user_rank = index
+
+        return XpLeaderboardResponse(entries=entries, current_user_rank=current_user_rank)
 
     async def delete_dummy_entry(self, dummy_id: int) -> bool:
         """Delete a dummy leaderboard entry"""

@@ -5,6 +5,8 @@ import { authApi } from '@/services/auth-api';
 import { userApi } from '@/services/user-api';
 import { subscriptionApi } from '@/services/subscription-api';
 import { flashcardApi } from '@/services/flashcard-api';
+import { questionApi } from '@/services/question-api';
+import { leaderboardApi } from '@/services/leaderboard-api';
 
 export const store = configureStore({
   reducer: {
@@ -13,6 +15,8 @@ export const store = configureStore({
     [userApi.reducerPath]: userApi.reducer,
     [subscriptionApi.reducerPath]: subscriptionApi.reducer,
     [flashcardApi.reducerPath]: flashcardApi.reducer,
+    [questionApi.reducerPath]: questionApi.reducer,
+    [leaderboardApi.reducerPath]: leaderboardApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -21,7 +25,9 @@ export const store = configureStore({
       authApi.middleware,
       userApi.middleware,
       subscriptionApi.middleware,
-      flashcardApi.middleware
+      flashcardApi.middleware,
+      questionApi.middleware,
+      leaderboardApi.middleware
     ),
 });
 

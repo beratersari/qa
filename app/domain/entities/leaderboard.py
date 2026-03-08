@@ -25,6 +25,7 @@ class LeaderboardEntry(BaseModel):
     rank: int
     display_name: str
     solved_count: int
+    total_xp: int
     user_id: Optional[int] = None
     is_dummy: bool = False
 
@@ -35,4 +36,23 @@ class LeaderboardResponse(BaseModel):
 
     period: LeaderboardPeriod
     entries: List[LeaderboardEntry]
+    current_user_rank: Optional[int] = None
+
+
+class XpLeaderboardEntry(BaseModel):
+    """XP leaderboard entry"""
+    model_config = ConfigDict(from_attributes=True)
+
+    rank: int
+    display_name: str
+    total_xp: int
+    challenge_streak: int
+    user_id: Optional[int] = None
+
+
+class XpLeaderboardResponse(BaseModel):
+    """XP leaderboard response"""
+    model_config = ConfigDict(from_attributes=True)
+
+    entries: List[XpLeaderboardEntry]
     current_user_rank: Optional[int] = None

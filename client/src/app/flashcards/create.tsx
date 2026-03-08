@@ -10,46 +10,43 @@ import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
 import { ControlledInput } from '@/components/molecules';
 import { Button, ServerError } from '@/components/atoms';
-import { useCreateFlashcardMutation } from '@/services/flashcard-api';
+import { useCreateFlashcardSetMutation } from '@/services/flashcard-api';
 import { Spacing } from '@/constants/theme';
 
-const flashcardSchema = z.object({
-  wordFront: z.string().min(1, 'Front text is required').max(200),
-  wordBack: z.string().min(1, 'Back text is required').max(200),
-  example: z.string().max(200).optional(),
+const flashcardSetSchema = z.object({
+  name: z.string().min(1, 'Name is required').max(200),
+  description: z.string().max(1000).optional(),
 });
 
-type FlashcardFormData = z.infer<typeof flashcardSchema>;
+type FlashcardSetFormData = z.infer<typeof flashcardSetSchema>;
 
 export default function FlashcardCreateScreen() {
   const router = useRouter();
-  const [createFlashcard, { isLoading }] = useCreateFlashcardMutation();
+  const [createFlashcardSet, { isLoading }] = useCreateFlashcardSetMutation();
   const [serverError, setServerError] = useState<string | null>(null);
 
-  const { control, handleSubmit } = useForm<FlashcardFormData>({
-    resolver: zodResolver(flashcardSchema),
+  const { control, handleSubmit } = useForm<FlashcardSetFormData>({
+    resolver: zodResolver(flashcardSetSchema),
     mode: 'onChange',
     defaultValues: {
-      wordFront: '',
-      wordBack: '',
-      example: '',
+      name: '',
+      description: '',
     },
   });
 
   const handleCreate = handleSubmit(async (data) => {
     setServerError(null);
     try {
-      await createFlashcard({
-        word_front: data.wordFront,
-        word_back: data.wordBack,
-        example_sentences: data.example ? [data.example] : [],
+      const result = await createFlashcardSet({
+        name: data.name,
+        description: data.description,
       }).unwrap();
-      router.back();
+      router.replace(`/flashcards/${result.id}`);
     } catch (error) {
       if (error instanceof Error) {
-        setServerError(error.message || 'Unable to create flashcard.');
+        setServerError(error.message || 'Unable to create flashcard set.');
       } else {
-        setServerError('Unable to create flashcard.');
+        setServerError('Unable to create flashcard set.');
       }
     }
   });
@@ -61,7 +58,7 @@ export default function FlashcardCreateScreen() {
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <ThemedText type="small" themeColor="primary">Back</ThemedText>
           </TouchableOpacity>
-          <ThemedText type="smallBold">Create Flashcard</ThemedText>
+          <ThemedText type="smallBold">Create Flashcard Set</ThemedText>
           <View style={styles.backButtonPlaceholder} />
         </View>
         <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -69,24 +66,18 @@ export default function FlashcardCreateScreen() {
 
           <ControlledInput
             control={control}
-            name="wordFront"
+            name="name"
             fieldType="text"
-            label="Front"
+            label="Set Name"
           />
           <ControlledInput
             control={control}
-            name="wordBack"
+            name="description"
             fieldType="text"
-            label="Back"
-          />
-          <ControlledInput
-            control={control}
-            name="example"
-            fieldType="text"
-            label="Example Sentence"
+            label="Description"
           />
 
-          <Button title="Create" onPress={handleCreate} loading={isLoading} fullWidth />
+          <Button title="Create Set" onPress={handleCreate} loading={isLoading} fullWidth />
         </ScrollView>
       </SafeAreaView>
     </ThemedView>
@@ -112,7 +103,7 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.one,
   },
   backButtonPlaceholder: {
-    width: 90,
+    width: 140,
   },
   scrollContent: {
     paddingVertical: Spacing.three,
